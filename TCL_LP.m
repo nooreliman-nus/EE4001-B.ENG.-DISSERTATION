@@ -1,4 +1,4 @@
-function [solution] = TCL_LP(t, pr, pw, c, m, temp_up, temp_0, temp_req, temp_en, d)
+function [ solution ] = TCL_LP(t, pr, pw, c, m, temp_up, temp_0, temp_req, temp_en, d)
 %This function aims to schedule thermostatically controlled loads
 %   Inputs:
 %       t - how long a time interval is in minutes
