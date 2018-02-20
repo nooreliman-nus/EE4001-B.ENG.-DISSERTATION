@@ -13,7 +13,7 @@ N = length(pr); %no. of periods in 24 hours, no. of variables
 
 %Objective Function - min f'*x
 
-f = t * pr; %cost array
+f = t * pr; %cost matrix
 
 %   Equality Constraints - Aeq*x = beq
 %       Aeq,beq are the matrix and vector components respectively
