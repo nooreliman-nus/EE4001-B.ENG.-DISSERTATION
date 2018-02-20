@@ -6,7 +6,7 @@ function [ solution ] = NL_LP(t, pr, l, pw)
 %       l - required time the loads have to run
 %       pw - the power rating of the loads
 %   Outputs:
-%       F - objective function value
+%       fval - objective function value
 %       x - optimal schedule
 
 N = length(pr); %no. of periods in 24 hours, no. of variables
