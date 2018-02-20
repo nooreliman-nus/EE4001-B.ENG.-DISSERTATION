@@ -9,9 +9,6 @@ function [solution] = NL_LP(interval, pr, duration, power)
 %       F - objective function value
 %       x - optimal schedule
 
-t = 10; %time step in minutes
-pr = ((30/t)/1000)*xlsread('ElectricityPrice.xlsx'); %$/kWh in half-hour resolution
-pr = repelem(pr, 30/t); %repeats each element 3 times to match 10-min resolution
 N = length(pr); %no. of periods in 24 hours, no. of variables
 
 %Objective Function - min f'*x
