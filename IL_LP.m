@@ -1,5 +1,5 @@
 function [ solution ] = IL_LP( t, pr, pw, e )
-%This function aims to schedule non-interruptible loads
+%This function aims to schedule interruptible loads
 %   Inputs:
 %       t - how long a time interval is in minutes
 %       pr - electricity prices(given in half hour intervals)
