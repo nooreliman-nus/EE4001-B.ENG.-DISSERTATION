@@ -6,7 +6,7 @@ function [ solution ] = IL_LP( t, pr, pw, e )
 %       pw - the power rating of the loads
 %       e - the energy required
 %   Outputs:
-%       F - objective function value
+%       fval - objective function value
 %       x - optimal schedule
 
 N = length(pr); %no. of periods in 24 hours, no. of variables
