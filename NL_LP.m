@@ -1,4 +1,4 @@
-function [solution] = NL_LP(interval, pr, duration, power)
+function [ solution ] = NL_LP(t, pr, l, pw)
 %This function aims to schedule non-interruptible loads
 %   Inputs:
 %       t - how long a time interval is in minutes
