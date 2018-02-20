@@ -1,4 +1,4 @@
-function [ solution ] = IL_LP( interval, daily_price, duration, power, energy )
+function [ solution ] = IL_LP( t, pr, pw, e )
 %This function aims to schedule non-interruptible loads
 %   Inputs:
 %       t - how long a time interval is in minutes
