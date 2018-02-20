@@ -1,48 +1,54 @@
-function [solution] = NL_LP(interval, daily_price, duration, power)
+function [solution] = NL_LP(interval, pr, duration, power)
 %This function aims to schedule non-interruptible loads
 %   Inputs:
-%       interval - how long a time interval is in minutes
-%       daily_price - electricity prices(given in half hour intervals)
-%       L_req - required time the loads have to run
-%       power - the power rating of the loads
+%       t - how long a time interval is in minutes
+%       pr - electricity prices(given in half hour intervals)
+%       l - required time the loads have to run
+%       pw - the power rating of the loads
 %   Outputs:
 %       F - objective function value
 %       x - optimal schedule
 
-interval = 10; %time step in minutes
-daily_price = ((30/interval)/1000)*xlsread('ElectricityPrice.xlsx'); %$/kWh in half-hour resolution
-daily_price = repelem(daily_price, 30/interval); %repeats each element 3 times to match 10-min resolution
-N = length(daily_price); %no. of periods in 24 hours
-power = 1;
-L_req=10;
+t = 10; %time step in minutes
+pr = ((30/t)/1000)*xlsread('ElectricityPrice.xlsx'); %$/kWh in half-hour resolution
+pr = repelem(pr, 30/t); %repeats each element 3 times to match 10-min resolution
+N = length(pr); %no. of periods in 24 hours, no. of variables
 
-%Objective Function
+%Objective Function - min f'*x
 
-f = daily_price * power; %cost
+f = t * pr; %cost array
 
-%Lower and upper bounds
-
-LB = zeros(N,1);
-UB = ones(N,1);
-
-%   Equality Constraints
+%   Equality Constraints - Aeq*x = beq
 %       Aeq,beq are the matrix and vector components respectively
 
-Aeq = ones(1,N);
-beq = L_req * power;
+Aeq = ones(1,N); %corresponds to total duration of ON load throughout l
+beq = l * pw;
 
-%   Inequality Constraints
+%   Inequality Constraints - A*x <= b
 %       A,b are the matrix and vector components respectively
+%       Include upper and lower bounds for each variable
 
-A = spalloc(N-sum(L_req),N, sum(L_req)+(N-sum(L_req)));
-rowcount=1;
-for timestep=1:N-L_req
-    A(rowcount,rowcount:rowcount+L_req)=[L_req, 1-L_req, ones(1, L_req-1)];
-    rowcount=rowcount+1;
-end;
-b=zeros((N-sum(L_req)),1);
+A_bound_up = eye(N);
+A_bound_low = -1* bound_up;
 
-[solution] = linprog(f',A,b,Aeq,beq,LB,UB);
+A = [A_bound_up;A_bound_low];
+
+b_bound_up = pw * ones(N,1);
+b_bound_low = zeros(N,1);
+
+b = [b_bound_up;b_bound_low];
+
+%   Non-interruptibility Constraints
+%       Create a band matrix where non-zero elements are in a diagonal band
+
+first_col = [[l-1];[-l];zeros(N-l-1,1)];
+first_row = [[l-1];-ones(l-1,1);zeros(N-l,1)];
+band = toeplitz(first_col,first_row);
+
+A = [A;band];
+
+b = [b;zeros(N-l+1,1)];
+
+[x,fval,exitflag] = linprog(f',A,b,Aeq,beq);
 
 end
-
