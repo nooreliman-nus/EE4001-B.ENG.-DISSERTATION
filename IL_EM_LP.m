@@ -1,4 +1,4 @@
-function [ solution ] = IL_EM_LP( t, pr, pw, e )
+function [ solution ] = IL_EM_LP( t, pr, pw, e, t_off, theta )
 %This function aims to schedule interruptible loads without electrical
 %machinery
 %   Inputs:
@@ -18,8 +18,8 @@ N = length(pr); %no. of periods in 24 hours, no. of variables
 
 %Objective Function - min f'*x
 
-f_x = t * pr; %corresponds to power status x
-f_y = zeros(N); %corresponds to ancilliary binary variables y
+f_x = [(t * pr),zeros(1,2*N)]; %corresponds to power status x
+f_y = zeros(N,3*N); %corresponds to ancilliary binary variables y
 f_z = zeros(3*N); %corresponds to variable z connecting x and y
 f = [f_x;f_y;f_z];
 
@@ -31,8 +31,11 @@ Aeq = [ones(1, N),zeros(1, 4 * N)];
     y_tmp = eye(N);
 %z_tmp1 - sub-vector of Aeq to obtain -(z2 + z3) at each time step
     z_tmp1 = zeros(N, 3 * N);
-    for i = 1:N
-        z_tmp1(i, (i * 3 + 1): ((i + 1) * 3)) = -1;
+    for i = 1
+        z_tmp1(i, i: (i * 3)) = -1;
+    end
+    for i = 2:N
+        z_tmp1(i, ((i-1) * 3 + 1): (i  * 3)) = -1;
     end
 %tmp1 - coefficient to satisfy equality constraint: y - z2 - z3 = 0
     tmp1 = [zeros(N, N), y_tmp, z_tmp1];
@@ -40,16 +43,23 @@ Aeq = [ones(1, N),zeros(1, 4 * N)];
     x_tmp = eye(N);
 %z_tmp2 - sub-vector of Aeq to obtain (-z2 * theta - z3 * pw) at each time step
     z_tmp2 = zeros(N, 3 * N);
-    for i = 1:N
-        z_tmp2(i, i * 3 + 1) = -theta;
-        z_tmp2(i, i * 3 + 2) = -pw;
+    for i = 1
+        z_tmp2(i, i + 1) = -theta;
+        z_tmp2(i, i + 2) = -pw;
+    end
+      for i = 2:N
+        z_tmp2(i, (i-1) * 3 + 1) = -theta;
+        z_tmp2(i, (i-1) * 3 + 2) = -pw;
     end
 %tmp2 - coefficient to satisfy equality constraint: x - z2 * theta - z3 * P = 0
     tmp2 = [x_tmp, zeros(N, N), z_tmp2];
 %z_tmp3 - sub-vector of Aeq to obtain (z1 + z2 + z3) at each time step
     z_tmp3 = zeros(N, 3 * N);
-    for i = 1:N
-        z_tmp3(i, i * 3: (i + 1) * 3) = 1;
+    for i = 1
+        z_tmp3(i, i : i + 2) = 1;
+    end
+    for i = 2:N
+        z_tmp3(i, (i-1) * 3: (i-1) * 3 + 2) = 1;
     end
 %tmp3 - coefficient to satisfy equality constraint: z1 + z2 + z3 = 1
     tmp3 = [zeros(N, 2 * N), z_tmp3];
@@ -76,10 +86,10 @@ A_bound_low = -1 * A_bound_up;
     A = [A,zeros(size(A))];
 %b - the vector for inequality constraints
 %b_bound_up - the vector correspond to upper bounds; b_bound_low - the vector correspond to lower bounds;
-    b_bound_up = P * ones(N, 1);
+    b_bound_up = pw * ones(N, 1);
     b_bound_low = zeros(N, 1);
 %construct the sub-vector of b corresponding to upper and lower bounds
-    b_row = [b_bound_up; b_bound_low];
+    b = [b_bound_up; b_bound_low];
 
 %   Ancillary minimum off-time constraints
 %       construct the matrix for inequalities
@@ -87,9 +97,9 @@ A_bound_low = -1 * A_bound_up;
 %       construct the band matrix with elements 1; -1; (corresponding to the ON & OFF) and
 %       1 on the i-th position (corresponding to switching-on after i intervals)
         first_col = [1;zeros(N - t_off - 1, 1)];
-        first_row = [1; -1; zeros(i,1);1;zeros(N - 3 - i)];
+        first_row = [1; -1; zeros(i,1);1;zeros(N - 3 - i,1)];
 
-        band = toeplitz(first_col, first_row)
+        band = toeplitz(first_col, first_row);
 %supplement band with additional zeros corresponding to power status variables
         band = [zeros(size(band)), band];
 
@@ -103,10 +113,13 @@ A_bound_low = -1 * A_bound_up;
     A_row = size(A, 1);
     A = [A, zeros(A_row, 3 * N)];
 
-[result,fval,exitflag] = linprog(f',A,b_row,Aeq,beq);
+[solution,Final_Cost,exitflag] = linprog(f',A,b,Aeq,beq);
 
-x = result(1:N);
-y = result(N+1:2*N);
-z = result((2*N)+1:5*N);
+x = solution(1:N);
+y = solution(N+1:2*N);
+z = solution((2*N)+1:5*N);
 
+display(Final_Cost)
+display(x)
+display(y)
 end
