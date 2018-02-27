@@ -1,4 +1,4 @@
-function [ solution ] = NL_LP(t, pr, l, pw)
+function [solution] = NL_LP(t, pr, l, pw)
 %This function aims to schedule non-interruptible loads
 %   Inputs:
 %       t - how long a time interval is in minutes
@@ -6,7 +6,7 @@ function [ solution ] = NL_LP(t, pr, l, pw)
 %       l - required time the loads have to run
 %       pw - the power rating of the loads
 %   Outputs:
-%       fval - objective function value
+%       F - objective function value
 %       x - optimal schedule
 
 N = length(pr); %no. of periods in 24 hours, no. of variables
@@ -26,7 +26,7 @@ beq = l * pw;
 %       Include upper and lower bounds for each variable
 
 A_bound_up = eye(N);
-A_bound_low = -1* bound_up;
+A_bound_low = -1 * A_bound_up;
 
 A = [A_bound_up;A_bound_low];
 
@@ -46,6 +46,9 @@ A = [A;band];
 
 b = [b;zeros(N-l+1,1)];
 
-[x,fval,exitflag] = linprog(f',A,b,Aeq,beq);
+[solution,Final_Cost,exitflag] = linprog(f',A,b,Aeq,beq);
+
+display(Final_Cost)
+display(solution)
 
 end
