@@ -26,10 +26,3 @@ Modelling, Simulation, Embedded system
 Project deliverables:
 -
 Development of BEMS controller on an appropriate computation platform such as Arduino, DSP, or others. The BEMS controller should communicate with a PC running power system simulation software, such as MATLAB dSPACE. The designed BEMS controller should be flexible so as to implement and test any smart grid functions as required.
-
-Repository Description:
--
-The MATLAB functions NL_LP, IL_LP, IL_EM_LP, TCL_LP will be called to solve the optimization problem of minimizing cost of electricity for non-interruptible, interruptible without electrical machinery, interruptible with electrical machinery and thermostatically controlled loads respectively. These functions will optimize the objective function by using the 'linprog' function.
-The excel file called 'ElectricityPrices.xlsx' displays the 24 hour electricity price at a 30 minute resolution.
-
-[updated 20/02/18]
