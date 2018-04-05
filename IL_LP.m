@@ -29,16 +29,29 @@ beq = e/t;
 A_bound_up = eye(N);
 A_bound_low = -1* A_bound_up;
 
-A = [A_bound_up;A_bound_low];
+A = [A_bound_up;A_bound_low]; %Linear inequality constraint matrix
 
 b_bound_up = pw * ones(N,1);
 b_bound_low = zeros(N,1);
 
-b = [b_bound_up;b_bound_low];
+b = [b_bound_up;b_bound_low]; %Linear inequality constraint vector
 
 [solution,Final_Cost,exitflag] = linprog(f',A,b,Aeq,beq);
 
+%Display final cost and power status
 display(Final_Cost)
 display(solution)
+
+figure
+%Plot of power status against time
+subplot(2,1,1)
+stairs(solution,'black')
+xlabel('Time')
+ylabel('Power Status (W)')
+%Plot of price against time
+subplot(2,1,2)
+plot(pr,'black')
+xlabel('Time')
+ylabel('Price ($/Wh)')
 end
 

@@ -13,13 +13,13 @@ N = length(pr); %no. of periods in 24 hours, no. of variables
 
 %Objective Function - min f'*x
 
-f = t * pr; %cost matrix
+f = t * pr * pw; %cost matrix
 
 %   Equality Constraints - Aeq*x = beq
 %       Aeq,beq are the matrix and vector components respectively
 
 Aeq = ones(1,N); %corresponds to total duration of ON load throughout l
-beq = l * pw;
+beq = l ;
 
 %   Inequality Constraints - A*x <= b
 %       A,b are the matrix and vector components respectively
@@ -28,12 +28,12 @@ beq = l * pw;
 A_bound_up = eye(N);
 A_bound_low = -1 * A_bound_up;
 
-A = [A_bound_up;A_bound_low];
+A = [A_bound_up;A_bound_low]; %Linear inequality constraint matrix
 
-b_bound_up = pw * ones(N,1);
+b_bound_up = ones(N,1);
 b_bound_low = zeros(N,1);
 
-b = [b_bound_up;b_bound_low];
+b = [b_bound_up;b_bound_low]; %Linear inequality constraint vector
 
 %   Non-interruptibility Constraints
 %       Create a band matrix where non-zero elements are in a diagonal band
@@ -46,12 +46,24 @@ A = [A;band];
 
 b = [b;zeros(N-l+1,1)];
 
-intcon = N;
+intcon = 1:N;
 
-[solution,Final_Cost,exitflag] = intlinprog(f',intcon,A,b,Aeq,beq)
+[solution,Final_Cost,~] = intlinprog(f',intcon,A,b,Aeq,beq);
 
+%Display final cost and power status
 display(Final_Cost)
 display(solution)
 
+figure
+%Plot of power status against time
+subplot(2,1,1)
+stairs(solution*pw,'black')
+xlabel('Time')
+ylabel('Power Status (W)')
+%Plot of price against time
+subplot(2,1,2)
+plot(pr,'black')
+xlabel('Time')
+ylabel('Price ($/Wh)')
 end
 

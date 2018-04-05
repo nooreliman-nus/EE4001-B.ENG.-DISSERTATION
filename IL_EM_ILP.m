@@ -21,7 +21,7 @@ N = length(pr); %no. of periods in 24 hours, no. of variables
 f_x = t * pr; %corresponds to power status x
 f_y = zeros(1, N); %corresponds to ancilliary binary variables y
 f_z = zeros(1, 3*N); %corresponds to variable z connecting x and y
-f = [f_x, f_y ,f_z];
+f = [f_x, f_y ,f_z]; %concatenates f_x, f_y and f_z to form the objective function
 
 %   Equality Constraints
 %       Aeq,beq are the matrix and vector components respectively
@@ -32,30 +32,30 @@ Aeq = [ones(1, N),zeros(1, 4 * N)];
 %z_tmp1 - sub-vector of Aeq to obtain -(z2 + z3) at each time step
     z_tmp1 = zeros(N, 3 * N);
     for i = 1:N
-        z_tmp1(i, ((i-1) * 3 + 1): ((i) * 3)) = -1;
+        z_tmp1(i, ((i-1) * 3 + 2): ((i) * 3)) = -1;
     end
 %tmp1 - coefficient to satisfy equality constraint: y - z2 - z3 = 0
-    tmp1 = [zeros(N, N), y_tmp, z_tmp1];
+    tmp1 = [zeros(N), y_tmp, z_tmp1];
 %x_tmp - sub-vector of Aeq to obtain x value at each time step
     x_tmp = eye(N);
 %z_tmp2 - sub-vector of Aeq to obtain (-z2 * theta - z3 * pw) at each time step
     z_tmp2 = zeros(N, 3 * N);
     for i = 1:N
-        z_tmp2(i, (i-1) * 3 + 1) = -theta;
-        z_tmp2(i, (i-1) * 3 + 2) = -pw;
+        z_tmp2(i, (i-1) * 3 + 2) = -theta;
+        z_tmp2(i, (i-1) * 3 + 3) = -pw;
     end
 %tmp2 - coefficient to satisfy equality constraint: x - z2 * theta - z3 * P = 0
-    tmp2 = [x_tmp, zeros(N, N), z_tmp2];
+    tmp2 = [x_tmp, zeros(N), z_tmp2];
 %z_tmp3 - sub-vector of Aeq to obtain (z1 + z2 + z3) at each time step
     z_tmp3 = zeros(N, 3 * N);
     for i = 1:N
-        z_tmp3(i, i : i * 3) = 1;
+        z_tmp3(i, (i-1)*3 + 1 : i * 3) = 1;
     end
 %tmp3 - coefficient to satisfy equality constraint: z1 + z2 + z3 = 1
     tmp3 = [zeros(N, 2 * N), z_tmp3];
     Aeq = [Aeq; tmp1; tmp2; tmp3];
 %beq - the vector for equality constraints
-    beq = zeros(1, 1);
+    beq = zeros(1);
     beq(1, 1) = e/t;
 %beq_tmp1 - sub-vector of beq to satisfy equality constraints: y - z2 - z3 = 0 and x - z2 * small_const - z3 * P = 0
 %beq_tmp2 - sub-vector of beq to satisfy equality constraints: z1 + z2 + z3 = 1
@@ -65,12 +65,12 @@ Aeq = [ones(1, N),zeros(1, 4 * N)];
     
 %   Inequality Constraints - A*x <= b
 %       A,b are the matrix and vector components respectively
-%       Include upper and lower bounds for each variable
+%       Include the upper and lower bounds for each variable
 
 A_bound_up = eye(N);
 A_bound_low = -1 * A_bound_up;
 
-%Aub - the matrix for inequality constraints
+%A - the matrix for inequality constraints
 %construct the sub-matrix of A corresponding to upper and lower bounds
     A = [A_bound_up; A_bound_low];
     A = [A,zeros(size(A))];
@@ -83,11 +83,11 @@ A_bound_low = -1 * A_bound_up;
 
 %   Ancillary minimum off-time constraints
 %       construct the matrix for inequalities
-    for i = 1: t_off -1
+    for i = 1: t_off - 1
 %       construct the band matrix with elements 1; -1; (corresponding to the ON & OFF) and
 %       1 on the i-th position (corresponding to switching-on after i intervals)
         first_col = [1;zeros(N - t_off - 1, 1)];
-        first_row = [1; -1; zeros(i,1);1;zeros(N - 3 - i,1)];
+        first_row = [1, -1, zeros(1,i-1),1,zeros(1,N - 3 - i + 1)];
 
         band = toeplitz(first_col, first_row);
 %supplement band with additional zeros corresponding to power status variables
@@ -97,21 +97,37 @@ A_bound_low = -1 * A_bound_up;
     end
 
     b_row = (N - t_off) * (t_off - 1);
-    b = [b;ones(b_row, 1)];
+    b = [b;ones(b_row, 1)]; %Linear inequality constraint vector
     
 %   A_row - row number of A without considering z elements
     A_row = size(A, 1);
-    A = [A, zeros(A_row, 3 * N)];
+    A = [A, zeros(A_row, 3 * N)]; %Linear inequality constraint matrix
 
-  intcon = [];  
-    
-[solution,Final_Cost,exitflag] = intlinprog(f',intcon,A,b,Aeq,beq);
+  intcon = N+1:2*N; %Specifies the y variables to be integer
+  lb = zeros(1,5*N); %Specifies the lower bound of all variables to be 0
+  ub = [inf(1,N), ones(1,4*N)]; %Specifies no upper bound for x variables while y and z variables have an upper bound of 1
+     
+[solution,Final_Cost,~] = intlinprog(f',intcon,A,b,Aeq,beq,lb,ub);
 
+%Specifies the portions of the solutions relating to x,y and z respectively
 x = solution(1:N);
-y = solution(N+1:2*N);
+y = solution((N+1):(2*N));
 z = solution((2*N)+1:5*N);
 
+%Display final cost, power status and ON-OFF status
 display(Final_Cost)
-display(x)
-display(y)
+display(x);
+display(y);
+
+figure
+%Plot of power status against time
+subplot(2,1,1)
+stairs(solution(1:N),'black')
+xlabel('Time')
+ylabel('Power Status (W)')
+%Plot of price against time
+subplot(2,1,2)
+plot(pr,'black')
+xlabel('Time')
+ylabel('Price ($/Wh)')
 end

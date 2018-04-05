@@ -35,11 +35,11 @@ f = t * pr; %cost matrix
     ub = eye(N);
 %       lb - opposite sign of ub
     lb = -1 * ub;
-%       A_ub - coefficient in inequality A * x <= b
-    A = [A;ub;lb];
+%       A - coefficient in inequality A * x <= b
+    A = [A;ub;lb]; %Linear inequality constraint matrix
 
 %       C - heat consumption at each time step
-    C = zeros(N); %initialise matrix)
+    C = zeros(1,N); %initialise matrix)
     for i = 1:N
         C(i) = d(i) * c * (temp_req - temp_en(i));
     end
@@ -47,19 +47,30 @@ f = t * pr; %cost matrix
     b = zeros(2 * N, 1);
     for i = 1:N
 %b(i, 0) - lower bound of energy accumulated at each time step
-        b(i, 1) = sum(C(1:i + 1)) + m * c * (temp_up - temp_0);
+        b(i, 1) = sum(C(1:i)) + m * c * (temp_up - temp_0);
 %b(i + N, 0) - upper bound of energy accumulated at each time step
-        b(i + N, 1) = -1 * sum(C(1:i + 1));
+        b(i + N, 1) = -1 * sum(C(1:i));
     end
     
 %b_tmp - upper bound and then lower bound for power value at each time step
     b_tmp = zeros(2 * N, 1);
     b_tmp(1:N) = pw;
 %b - value in inequality A * x <= b
-    b = [b;b_tmp];
+    b = [b;b_tmp]; %Linear inequality constraint vector
         
-[solution,Final_Cost,exitflag] = linprog(f',A,b);
+[solution,Final_Cost,~] = linprog(f',A,b);
 
 display(Final_Cost)
 display(solution)
+
+figure
+%Plot of power status against time
+subplot(2,1,1)
+stairs(solution,'black')
+xlabel('Time')
+ylabel('Power Status (W)')
+subplot(2,1,2)
+plot(pr,'black')
+xlabel('Time')
+ylabel('Price ($/Wh)')
 end
